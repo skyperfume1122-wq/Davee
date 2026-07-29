@@ -308,24 +308,6 @@
     }
 
     // ========================
-    // 10. MUSIC PLAYER - Load from API
-    // ========================
-    if (songs.length > 0) {
-      var song = songs[0];
-      var audio = document.getElementById('hufel-audio');
-      var titleEl = document.getElementById('hufel-player-title');
-      if (audio && song.file_url && audio.src.indexOf(song.file_url) === -1) {
-        var wasPlaying = !audio.paused;
-        audio.src = song.file_url;
-        audio.load();
-        if (wasPlaying) audio.play()['catch'](function(){});
-      }
-      if (titleEl && song.title_en) {
-        titleEl.textContent = song.title_en;
-      }
-    }
-
-    // ========================
     // 11. SITE NAME in various places
     // ========================
     if (settings.site_name) {
