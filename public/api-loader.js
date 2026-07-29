@@ -86,12 +86,13 @@
     })();
 
     // ---- FETCH ALL DATA IN PARALLEL ----
-    const [settings, products, songs, reps, beforeAfter] = await Promise.all([
+    const [settings, products, songs, reps, beforeAfter, posts] = await Promise.all([
       fetch('/api/settings').then(r => r.json()).catch(() => ({})),
       fetch('/api/products').then(r => r.json()).catch(() => []),
       fetch('/api/settings/songs').then(r => r.json()).catch(() => []),
       fetch('/api/representatives').then(r => r.json()).catch(() => []),
-      fetch('/api/beforeafter').then(r => r.json()).catch(() => [])
+      fetch('/api/beforeafter').then(r => r.json()).catch(() => []),
+      fetch('/api/journal').then(r => r.json()).catch(() => [])
     ]);
 
     // ========================
@@ -376,6 +377,41 @@
             }, i * 150);
           });
         }, 300);
+      }
+    }
+
+    // ========================
+    // 13. JOURNAL POSTS - Inject into journal grid
+    // ========================
+    if (posts && posts.length > 0) {
+      var journalHeading = findElByText('The Hüfel Journal');
+      if (journalHeading) {
+        var journalSection = journalHeading.closest('section');
+        var journalGrid = journalSection ? journalSection.querySelector('.grid') : null;
+        if (journalGrid) {
+          journalGrid.innerHTML = posts.map(function(p) {
+            return '<div style="opacity:0;transform:translateY(34px)">' +
+              '<div class="group rounded-lg overflow-hidden border border-line block text-start" style="background:var(--bg-card2)">' +
+              '<div class="aspect-[16/10] overflow-hidden" style="background:var(--bg-card)">' +
+              (p.image_url ? '<img src="' + p.image_url + '" alt="' + (p.title_en || '') + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">' : '<div class="w-full h-full flex items-center justify-center" style="color:var(--muted2);font-size:12px;">No image</div>') +
+              '</div>' +
+              '<div class="p-5">' +
+              '<div class="text-xs uppercase tracking-wider mb-2" style="color:var(--accent)">' + (p.author || 'Hüfel Journal') + '</div>' +
+              '<h3 class="font-display text-lg font-medium leading-tight">' + (p.title_en || '') + '</h3>' +
+              (p.excerpt_en ? '<p class="text-sm mt-2" style="color:var(--muted2);line-height:1.5;">' + p.excerpt_en + '</p>' : '') +
+              '</div></div></div>';
+          }).join('');
+          // Animate in
+          setTimeout(function() {
+            journalGrid.querySelectorAll('> div').forEach(function(el, i) {
+              setTimeout(function() {
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+                el.style.transition = 'all 0.6s ease';
+              }, i * 150);
+            });
+          }, 400);
+        }
       }
     }
 

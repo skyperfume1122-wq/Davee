@@ -36,6 +36,7 @@ app.use(session({
   cookie: {
     secure: isVercel || process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -72,6 +73,7 @@ app.use('/api/products', require('./api/products'));
 app.use('/api/representatives', require('./api/representatives'));
 app.use('/api/settings', require('./api/settings'));
 app.use('/api/beforeafter', require('./api/beforeafter'));
+app.use('/api/journal', require('./api/journal'));
 
 // File upload endpoint
 const multer = require('multer');
@@ -88,7 +90,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
-    const allowed = /\.(jpg|jpeg|png|gif|webp|svg|mp3|wav|ogg)$/i;
+    const allowed = /\.(jpg|jpeg|png|gif|webp|svg|mp3|wav|ogg|glb|gltf|obj|fbx|stl)$/i;
     if (allowed.test(path.extname(file.originalname))) {
       cb(null, true);
     } else {

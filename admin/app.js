@@ -2,30 +2,43 @@
 
 const API = {
   async get(path) {
-    const res = await fetch(path);
+    const res = await fetch(path, { credentials: 'same-origin' });
+    if (res.status === 401) { await handleSessionExpired(); return { error: 'Unauthorized' }; }
     return res.json();
   },
   async post(path, data) {
     const res = await fetch(path, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    if (res.status === 401) { await handleSessionExpired(); return { error: 'Unauthorized' }; }
     return res.json();
   },
   async put(path, data) {
     const res = await fetch(path, {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    if (res.status === 401) { await handleSessionExpired(); return { error: 'Unauthorized' }; }
     return res.json();
   },
   async del(path) {
-    const res = await fetch(path, { method: 'DELETE' });
+    const res = await fetch(path, { method: 'DELETE', credentials: 'same-origin' });
+    if (res.status === 401) { await handleSessionExpired(); return { error: 'Unauthorized' }; }
     return res.json();
   }
 };
+
+// Handle session expiry - redirect to login
+async function handleSessionExpired() {
+  currentUser = null;
+  renderLogin();
+  throw new Error('Session expired. Please log in again.');
+}
 
 // File upload helper - returns a Promise with the uploaded URL
 function uploadFile(file) {
@@ -34,10 +47,19 @@ function uploadFile(file) {
     formData.append('file', file);
     fetch('/api/upload', {
       method: 'POST',
+      credentials: 'same-origin',
       body: formData
     })
-    .then(r => r.json())
+    .then(r => {
+      if (r.status === 401) {
+        handleSessionExpired();
+        reject('Session expired');
+        return null;
+      }
+      return r.json();
+    })
     .then(data => {
+      if (!data) return;
       if (data.success) resolve(data.url);
       else reject(data.error || 'Upload failed');
     })
@@ -192,6 +214,7 @@ async function navigate(page) {
     case 'settings': renderSettingsPage(content, title); break;
     case 'music': renderMusicPage(content, title); break;
     case 'beforeafter': renderBeforeAfterPage(content, title); break;
+    case 'journal': renderJournalPage(content, title); break;
   }
 }
 
@@ -204,6 +227,7 @@ async function renderDashboardPage(content, title) {
     const products = await API.get('/api/products');
     const reps = await API.get('/api/representatives');
     const settings = await API.get('/api/settings');
+    const journalPosts = await API.get('/api/journal/admin/all');
 
     content.innerHTML = `
       <div class="stats-grid">
@@ -216,11 +240,11 @@ async function renderDashboardPage(content, title) {
           <div class="stat-label">Representatives</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">${settings.site_name || 'HÜFEL'}</div>
-          <div class="stat-label">Site Status</div>
+          <div class="stat-value">${journalPosts.length}</div>
+          <div class="stat-label">Journal Posts</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">4</div>
+          <div class="stat-value">${settings.site_name || 'HÜFEL'}</div>
           <div class="stat-label">Languages</div>
         </div>
       </div>
@@ -376,6 +400,10 @@ async function showProductModal(id = null) {
           <label>Product Image</label>
           <div id="p-image-uploader"></div>
         </div>
+        <div class="form-group">
+          <label>3D Model (GLB/GLTF/OBJ)</label>
+          <div id="p-model-uploader"></div>
+        </div>
         <div class="form-row-3">
           <label class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:0;">
             <input type="checkbox" id="p-featured" ${product.is_featured ? 'checked' : ''}>
@@ -422,8 +450,9 @@ async function showProductModal(id = null) {
 
   document.body.appendChild(modal);
 
-  // Init file uploader
+  // Init file uploaders
   createFileUploader('p-image-uploader', product.image_url);
+  createFileUploader('p-model-uploader', product.model_3d_url);
 
   // Tab switching
   modal.querySelectorAll('#product-tabs .tab').forEach(tab => {
@@ -446,8 +475,8 @@ async function saveProduct(id = null) {
     title_zh: document.getElementById('p-title_zh').value,
     category: document.getElementById('p-category').value,
     finish: document.getElementById('p-finish').value,
-    collection: document.getElementById('p-collection').value,
-    image_url: (document.getElementById('p-image-uploader-hidden') || {value: ''}).value || '',
+    collection: document.getElementById('p-collection').value,      image_url: (document.getElementById('p-image-uploader-hidden') || {value: ''}).value || '',
+    model_3d_url: (document.getElementById('p-model-uploader-hidden') || {value: ''}).value || '',
     description_en: document.getElementById('p-desc_en').value,
     description_fa: document.getElementById('p-desc_fa').value,
     description_ar: document.getElementById('p-desc_ar').value,
@@ -992,6 +1021,178 @@ async function deleteBeforeAfter(id) {
   await API.del('/api/beforeafter/' + id);
   toast('Deleted');
   navigate('beforeafter');
+}
+
+// ============ JOURNAL POSTS ============
+
+async function renderJournalPage(content, title) {
+  title.textContent = 'Journal';
+  content.innerHTML = loading();
+
+  try {
+    const posts = await API.get('/api/journal/admin/all');
+
+    content.innerHTML = `
+      <div class="table-container">
+        <div class="table-header">
+          <h3>All Journal Posts (${posts.length})</h3>
+          <button class="btn btn-primary btn-sm" onclick="showJournalModal()">+ Add Post</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Title (EN)</th><th>Slug</th><th>Image</th><th>Author</th><th>Published</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            ${posts.map(p => `
+              <tr>
+                <td>${p.title_en || '—'}</td>
+                <td style="font-size:11px;color:var(--muted);">${p.slug || '—'}</td>
+                <td>${p.image_url ? '<span style="color:var(--success);">✓</span>' : '—'}</td>
+                <td>${p.author || '—'}</td>
+                <td>${p.published ? '<span class="badge badge-success">Published</span>' : '<span class="badge badge-warning">Draft</span>'}</td>
+                <td>
+                  <button class="btn btn-sm btn-secondary" onclick="showJournalModal(${p.id})">✏️</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteJournal(${p.id})">🗑️</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        ${posts.length === 0 ? empty('No journal posts yet. Click "+ Add Post" to create one.') : ''}
+      </div>
+    `;
+  } catch (err) {
+    content.innerHTML = `<div class="empty-state"><p>Error: ${err.message}</p></div>`;
+  }
+}
+
+async function showJournalModal(id = null) {
+  let post = { title_en: '', title_fa: '', title_ar: '', title_zh: '',
+    excerpt_en: '', excerpt_fa: '', excerpt_ar: '', excerpt_zh: '',
+    content_en: '', content_fa: '', content_ar: '', content_zh: '',
+    image_url: '', author: '', published: 1, sort_order: 0, slug: '' };
+
+  if (id) {
+    post = await API.get(`/api/journal/admin/${id}`);
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal modal-lg">
+      <h2>${id ? 'Edit Journal Post' : 'Add Journal Post'}</h2>
+      <div class="tabs" id="journal-tabs">
+        <button class="tab active" data-tab="main">Main</button>
+        <button class="tab" data-tab="en">EN</button>
+        <button class="tab" data-tab="fa">FA</button>
+        <button class="tab" data-tab="ar">AR</button>
+        <button class="tab" data-tab="zh">ZH</button>
+      </div>
+
+      <div id="journal-tab-main">
+        <div class="form-row">
+          <div class="form-group"><label>Slug (URL)</label><input class="form-input" id="j-slug" value="${post.slug || ''}" placeholder="Auto-generated if empty"></div>
+          <div class="form-group"><label>Author</label><input class="form-input" id="j-author" value="${post.author || ''}" placeholder="e.g. Hüfel Team"></div>
+        </div>
+        <div class="form-group">
+          <label>Featured Image</label>
+          <div id="j-image-uploader"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Sort Order</label><input class="form-input" id="j-sort" type="number" value="${post.sort_order || 0}"></div>
+          <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-top:24px;">
+            <input type="checkbox" id="j-published" ${post.published ? 'checked' : ''}>
+            <span style="font-size:13px;">Published</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="journal-tab-en" style="display:none;">
+        <div class="form-group"><label>Title (English)</label><input class="form-input" id="j-title_en" value="${post.title_en || ''}"></div>
+        <div class="form-group"><label>Excerpt (English)</label><textarea class="form-input" id="j-excerpt_en">${post.excerpt_en || ''}</textarea></div>
+        <div class="form-group"><label>Content (English)</label><textarea class="form-input" id="j-content_en" style="min-height:150px;">${post.content_en || ''}</textarea></div>
+      </div>
+      <div id="journal-tab-fa" style="display:none;" dir="rtl">
+        <div class="form-group"><label>عنوان (فارسی)</label><input class="form-input" id="j-title_fa" value="${post.title_fa || ''}"></div>
+        <div class="form-group"><label>خلاصه (فارسی)</label><textarea class="form-input" id="j-excerpt_fa">${post.excerpt_fa || ''}</textarea></div>
+        <div class="form-group"><label>محتوا (فارسی)</label><textarea class="form-input" id="j-content_fa" style="min-height:150px;">${post.content_fa || ''}</textarea></div>
+      </div>
+      <div id="journal-tab-ar" style="display:none;" dir="rtl">
+        <div class="form-group"><label>العنوان (العربية)</label><input class="form-input" id="j-title_ar" value="${post.title_ar || ''}"></div>
+        <div class="form-group"><label>الملخص (العربية)</label><textarea class="form-input" id="j-excerpt_ar">${post.excerpt_ar || ''}</textarea></div>
+        <div class="form-group"><label>المحتوى (العربية)</label><textarea class="form-input" id="j-content_ar" style="min-height:150px;">${post.content_ar || ''}</textarea></div>
+      </div>
+      <div id="journal-tab-zh" style="display:none;">
+        <div class="form-group"><label>标题 (中文)</label><input class="form-input" id="j-title_zh" value="${post.title_zh || ''}"></div>
+        <div class="form-group"><label>摘要 (中文)</label><textarea class="form-input" id="j-excerpt_zh">${post.excerpt_zh || ''}</textarea></div>
+        <div class="form-group"><label>内容 (中文)</label><textarea class="form-input" id="j-content_zh" style="min-height:150px;">${post.content_zh || ''}</textarea></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="saveJournal(${id || ''})">💾 Save</button>
+        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Init file uploader
+  createFileUploader('j-image-uploader', post.image_url);
+
+  // Tab switching
+  modal.querySelectorAll('#journal-tabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      modal.querySelectorAll('#journal-tabs .tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      modal.querySelectorAll('[id^="journal-tab-"]').forEach(el => el.style.display = 'none');
+      const target = document.getElementById(`journal-tab-${tab.dataset.tab}`);
+      if (target) target.style.display = 'block';
+    });
+  });
+}
+
+async function saveJournal(id = null) {
+  const data = {
+    title_en: document.getElementById('j-title_en').value,
+    title_fa: document.getElementById('j-title_fa').value,
+    title_ar: document.getElementById('j-title_ar').value,
+    title_zh: document.getElementById('j-title_zh').value,
+    slug: document.getElementById('j-slug').value,
+    excerpt_en: document.getElementById('j-excerpt_en').value,
+    excerpt_fa: document.getElementById('j-excerpt_fa').value,
+    excerpt_ar: document.getElementById('j-excerpt_ar').value,
+    excerpt_zh: document.getElementById('j-excerpt_zh').value,
+    content_en: document.getElementById('j-content_en').value,
+    content_fa: document.getElementById('j-content_fa').value,
+    content_ar: document.getElementById('j-content_ar').value,
+    content_zh: document.getElementById('j-content_zh').value,
+    image_url: (document.getElementById('j-image-uploader-hidden') || {value: ''}).value || '',
+    author: document.getElementById('j-author').value,
+    sort_order: parseInt(document.getElementById('j-sort').value) || 0,
+    published: document.getElementById('j-published').checked ? 1 : 0
+  };
+
+  try {
+    if (id) {
+      await API.put(`/api/journal/${id}`, data);
+      toast('Journal post updated!');
+    } else {
+      await API.post('/api/journal', data);
+      toast('Journal post created!');
+    }
+    document.querySelector('.modal-overlay').remove();
+    navigate('journal');
+  } catch (err) {
+    toast('Error saving journal post', 'error');
+  }
+}
+
+async function deleteJournal(id) {
+  if (!confirm('Delete this journal post?')) return;
+  await API.del(`/api/journal/${id}`);
+  toast('Journal post deleted');
+  navigate('journal');
 }
 
 // ============ INIT ============

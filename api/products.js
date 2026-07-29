@@ -27,14 +27,14 @@ router.post('/', requireAuth, (req, res) => {
 
   const result = runStatement(`
     INSERT INTO products (code, title_en, title_fa, title_ar, title_zh, category, finish, collection,
-      image_url, description_en, description_fa, description_ar, description_zh,
+      image_url, model_3d_url, description_en, description_fa, description_ar, description_zh,
       is_featured, is_new, is_best_seller, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     productCode,
     title_en || '', title_fa || '', title_ar || '', title_zh || '',
     category || '', finish || '', collection || '',
-    image_url || '', description_en || '', description_fa || '', description_ar || '', description_zh || '',
+    image_url || '', req.body.model_3d_url || '', description_en || '', description_fa || '', description_ar || '', description_zh || '',
     is_featured ? 1 : 0, is_new ? 1 : 0, is_best_seller ? 1 : 0, sort_order || 0
   ]);
 
@@ -46,7 +46,7 @@ router.put('/:id', requireAuth, (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
   const fields = ['code', 'title_en', 'title_fa', 'title_ar', 'title_zh', 'category', 'finish',
-    'collection', 'image_url', 'description_en', 'description_fa', 'description_ar', 'description_zh',
+    'collection', 'image_url', 'model_3d_url', 'description_en', 'description_fa', 'description_ar', 'description_zh',
     'is_featured', 'is_new', 'is_best_seller', 'sort_order'];
 
   const updates = [];

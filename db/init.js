@@ -51,6 +51,7 @@ async function initDb() {
     title_ar TEXT NOT NULL DEFAULT '', title_zh TEXT NOT NULL DEFAULT '',
     category TEXT DEFAULT '', finish TEXT DEFAULT '', collection TEXT DEFAULT '',
     image_url TEXT DEFAULT '',
+    model_3d_url TEXT DEFAULT '',
     description_en TEXT DEFAULT '', description_fa TEXT DEFAULT '',
     description_ar TEXT DEFAULT '', description_zh TEXT DEFAULT '',
     is_featured INTEGER DEFAULT 0, is_new INTEGER DEFAULT 0,
@@ -92,6 +93,24 @@ async function initDb() {
     id INTEGER PRIMARY KEY AUTOINCREMENT, section TEXT NOT NULL,
     key TEXT NOT NULL, lang TEXT NOT NULL, value TEXT DEFAULT '',
     UNIQUE(section, key, lang)
+  )`);
+
+  // Journal posts table
+  db.run(`CREATE TABLE IF NOT EXISTS journal_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title_en TEXT NOT NULL DEFAULT '', title_fa TEXT NOT NULL DEFAULT '',
+    title_ar TEXT NOT NULL DEFAULT '', title_zh TEXT NOT NULL DEFAULT '',
+    slug TEXT UNIQUE,
+    excerpt_en TEXT DEFAULT '', excerpt_fa TEXT DEFAULT '',
+    excerpt_ar TEXT DEFAULT '', excerpt_zh TEXT DEFAULT '',
+    content_en TEXT DEFAULT '', content_fa TEXT DEFAULT '',
+    content_ar TEXT DEFAULT '', content_zh TEXT DEFAULT '',
+    image_url TEXT DEFAULT '',
+    author TEXT DEFAULT '',
+    published INTEGER DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
   )`);
 
   // Before/After images table
