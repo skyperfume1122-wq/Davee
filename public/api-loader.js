@@ -325,6 +325,16 @@
       }
     }
 
+    // Restore play/pause on toggle from API-loaded music
+    if (songs.length > 0) {
+      var playerEl = document.getElementById('hufel-player');
+      if (playerEl && !playerEl.getAttribute('data-api-ready')) {
+        playerEl.setAttribute('data-api-ready', '1');
+        var s = document.getElementById('hufel-player-status');
+        var icon = document.getElementById('hufel-player-icon');
+        if (s) s.textContent = 'Tap';
+    }
+
     // ========================
     // 11. SITE NAME in various places
     // ========================
