@@ -127,6 +127,35 @@ async function seed() {
   }
   console.log(`  ✓ ${catCount} categories seeded`);
 
+  // Seed before/after images - using local Unsplash images that exist in the project
+  const beforeAfter = [
+    {
+      title_en: 'Modern Kitchen Transformation', title_fa: 'تحول آشپزخانه مدرن', title_ar: 'تحول المطبخ الحديث', title_zh: '现代厨房改造',
+      before_image: 'https://images.unsplash.com/photo-1656402887556-e727ffe1f6d7?w=800&q=80',
+      after_image: 'https://images.unsplash.com/photo-1663811396551-e639caee6e62?w=800&q=80',
+      sort_order: 1
+    },
+    {
+      title_en: 'Luxury Cabinetry Upgrade', title_fa: 'ارتقاء کابینت لوکس', title_ar: 'ترقية الخزائن الفاخرة', title_zh: '豪华橱柜升级',
+      before_image: 'https://images.unsplash.com/photo-1623092242739-5a382879cec9?w=800&q=80',
+      after_image: 'https://images.unsplash.com/photo-1564540586988-aa4e53c3d799?w=1000&q=80',
+      sort_order: 2
+    }
+  ];
+
+  let baCount = 0;
+  for (const ba of beforeAfter) {
+    // Check if this already exists by title
+    const existing = queryOne('SELECT id FROM before_after WHERE title_en = ?', [ba.title_en]);
+    if (!existing) {
+      runStatement(`
+        INSERT INTO before_after (title_en, title_fa, title_ar, title_zh, before_image, after_image, sort_order, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+      `, [ba.title_en, ba.title_fa, ba.title_ar, ba.title_zh, ba.before_image, ba.after_image, ba.sort_order]);
+      baCount++;
+    }
+  }
+  console.log(`  \u2713 ${baCount} before/after images seeded`);
   console.log('\n  ✦ Seeding complete! ✦\n');
   console.log('  Run `node server.js` to start the CMS.\n');
   process.exit(0);

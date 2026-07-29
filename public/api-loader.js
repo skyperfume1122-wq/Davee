@@ -333,6 +333,7 @@
         var s = document.getElementById('hufel-player-status');
         var icon = document.getElementById('hufel-player-icon');
         if (s) s.textContent = 'Tap';
+      }
     }
 
     // ========================

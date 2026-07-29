@@ -31,12 +31,14 @@ app.use(express.urlencoded({ extended: true }));
 // Session
 app.use(session({
   secret: process.env.SESSION_SECRET || 'hufel-cms-secret-key-2026',
-  resave: false,
-  saveUninitialized: false,
+  resave: true,
+  saveUninitialized: true,
+  rolling: true,
   cookie: {
     secure: isVercel || process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax',
+    path: '/',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
