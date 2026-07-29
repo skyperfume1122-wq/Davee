@@ -41,6 +41,26 @@ app.use(session({
   }
 }));
 
+// Serve extensionless image files BEFORE static middleware to set correct MIME type
+app.use('/images.unsplash.com', (req, res) => {
+  const filePath = path.join(__dirname, 'public', req.path);
+  if (fs.existsSync(filePath)) {
+    const ext = path.extname(filePath).toLowerCase();
+    const mime = !ext || ext === '' ? 'image/jpeg' : null;
+    if (mime) return res.type(mime).sendFile(filePath);
+  }
+  res.status(404).end();
+});
+app.use('/images.pexels.com', (req, res) => {
+  const filePath = path.join(__dirname, 'public', req.path);
+  if (fs.existsSync(filePath)) {
+    const ext = path.extname(filePath).toLowerCase();
+    const mime = !ext || ext === '' ? 'image/jpeg' : null;
+    if (mime) return res.type(mime).sendFile(filePath);
+  }
+  res.status(404).end();
+});
+
 // Serve static files - the existing site (no DB needed, serve immediately)
 app.use(express.static(path.join(__dirname, 'public')));
 

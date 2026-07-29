@@ -3,7 +3,7 @@
 const API = {
   async get(path) {
     const res = await fetch(path, { credentials: 'same-origin' });
-    if (res.status === 401) { await handleSessionExpired(); return { error: 'Unauthorized' }; }
+    if (res.status === 401) { handleSessionExpired(); return { error: 'Unauthorized' }; }
     return res.json();
   },
   async post(path, data) {
@@ -13,7 +13,7 @@ const API = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (res.status === 401) { await handleSessionExpired(); return { error: 'Unauthorized' }; }
+    if (res.status === 401) { handleSessionExpired(); return { error: 'Unauthorized' }; }
     return res.json();
   },
   async put(path, data) {
@@ -23,21 +23,20 @@ const API = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (res.status === 401) { await handleSessionExpired(); return { error: 'Unauthorized' }; }
+    if (res.status === 401) { handleSessionExpired(); return { error: 'Unauthorized' }; }
     return res.json();
   },
   async del(path) {
     const res = await fetch(path, { method: 'DELETE', credentials: 'same-origin' });
-    if (res.status === 401) { await handleSessionExpired(); return { error: 'Unauthorized' }; }
+    if (res.status === 401) { handleSessionExpired(); return { error: 'Unauthorized' }; }
     return res.json();
   }
 };
 
 // Handle session expiry - redirect to login
-async function handleSessionExpired() {
+function handleSessionExpired() {
   currentUser = null;
   renderLogin();
-  throw new Error('Session expired. Please log in again.');
 }
 
 // File upload helper - returns a Promise with the uploaded URL
@@ -54,7 +53,7 @@ function uploadFile(file) {
       if (r.status === 401) {
         handleSessionExpired();
         reject('Session expired');
-        return null;
+        return;
       }
       return r.json();
     })
