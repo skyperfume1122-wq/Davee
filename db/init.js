@@ -3,7 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const DB_PATH = path.join(__dirname, 'database.sqlite');
+// On Vercel, use /tmp (writable temp directory)
+const DB_PATH = process.env.VERCEL 
+  ? '/tmp/hufel-data/database.sqlite' 
+  : path.join(__dirname, 'database.sqlite');
 
 let db = null;
 
@@ -12,7 +15,16 @@ function getDb() {
 }
 
 async function initDb() {
-  const SQL = await initSqlJs();
+  // Explicit WASM path for Vercel serverless (sql.js needs to find the .wasm file)
+  const SQL = await initSqlJs({
+    locateFile: file => path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file)
+  });
+
+  // Ensure the directory for the database exists
+  const dbDir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
 
   // Try to load existing database
   if (fs.existsSync(DB_PATH)) {

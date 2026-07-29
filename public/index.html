@@ -11,19 +11,9 @@ $RC=function(a,b){if(b=document.getElementById(b))(a=document.getElementById(a))
     <span id="hufel-player-title" style="font-size:11px;font-weight:500;color:#f5f3ef;letter-spacing:0.5px;">Hüfel Theme</span>
     <span id="hufel-player-status" style="font-size:9px;color:#8a8783;">Tap to play</span>
   </div>
-  <div id="hufel-equalizer" style="display:none;align-items:center;gap:3px;margin-left:8px;height:20px;">
-    <span style="width:3px;height:20px;background:var(--accent,#c8a45c);border-radius:2px;animation:eq 0.8s ease-in-out infinite;"></span>
-    <span style="width:3px;height:14px;background:var(--accent,#c8a45c);border-radius:2px;animation:eq 0.6s ease-in-out infinite 0.2s;"></span>
-    <span style="width:3px;height:10px;background:var(--accent,#c8a45c);border-radius:2px;animation:eq 0.9s ease-in-out infinite 0.4s;"></span>
-    <span style="width:3px;height:16px;background:var(--accent,#c8a45c);border-radius:2px;animation:eq 0.7s ease-in-out infinite 0.1s;"></span>
-  </div>
 </div>
 <audio id="hufel-audio" src="/music/Hufel.mp3" loop preload="metadata"></audio>
 <style>
-  @keyframes eq {
-    0%,100% { transform: scaleY(0.4); opacity: 0.5; }
-    50% { transform: scaleY(1); opacity: 1; }
-  }
   #hufel-music-player:hover { border-color: var(--accent,#c8a45c); transform: translateY(0) scale(1.03) !important; }
   #hufel-music-player:hover #hufel-player-btn { transform: scale(1.1); }
 </style>
@@ -31,10 +21,14 @@ $RC=function(a,b){if(b=document.getElementById(b))(a=document.getElementById(a))
   (function(){
     const player = document.getElementById('hufel-music-player');
     const audio = document.getElementById('hufel-audio');
-    audio.volume = 0.18;
+    audio.volume = 0.5;
+    // Log if audio fails to load
+    audio.addEventListener('error', function() {
+      console.warn('Audio failed to load:', audio.src);
+      document.getElementById('hufel-player-status').textContent = 'Audio unavailable';
+    });
     const icon = document.getElementById('hufel-player-icon');
     const status = document.getElementById('hufel-player-status');
-    const eq = document.getElementById('hufel-equalizer');
     let isPlaying = false;
 
     // Animate in
@@ -49,13 +43,11 @@ $RC=function(a,b){if(b=document.getElementById(b))(a=document.getElementById(a))
         icon.className = 'fas fa-play';
         icon.style.marginLeft = '2px';
         status.textContent = 'Paused';
-        eq.style.display = 'none';
       } else {
         audio.play().catch(() => {});
         icon.className = 'fas fa-pause';
         icon.style.marginLeft = '0';
         status.textContent = 'Now playing';
-        eq.style.display = 'flex';
       }
       isPlaying = !isPlaying;
     };

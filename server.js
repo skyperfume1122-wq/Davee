@@ -7,8 +7,22 @@ const { initDb } = require('./db/init');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Initialize database
-initDb();
+// Determine writable paths for Vercel (read-only filesystem except /tmp)
+const isVercel = !!process.env.VERCEL;
+const dataDir = isVercel ? '/tmp/hufel-data' : path.join(__dirname);
+const uploadsDir = path.join(dataDir, 'uploads');
+
+// Initialize database (async, completes before first request)
+let dbReady = false;
+let dbError = null;
+const dbInitPromise = initDb().then(() => {
+  dbReady = true;
+  console.log('✓ Database initialized');
+}).catch(err => {
+  dbError = err;
+  dbReady = true; // Unblock middleware so it can return 500
+  console.error('Database init failed:', err);
+});
 
 // Middleware
 app.use(express.json());
@@ -20,13 +34,13 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: isVercel || process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
-// Serve static files - the existing site
+// Serve static files - the existing site (no DB needed, serve immediately)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve music files
@@ -36,9 +50,21 @@ app.use('/music', express.static(path.join(__dirname, 'music')));
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
 
 // Serve uploaded images
-const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use('/uploads', express.static(uploadsDir));
+
+// Wait-for-DB middleware (only for routes that need the database)
+app.use('/api', (req, res, next) => {
+  if (dbReady && !dbError) return next();
+  if (dbError) {
+    return res.status(500).json({ error: 'Database initialization failed', details: dbError.message });
+  }
+  // Not ready yet, wait for the init promise
+  dbInitPromise.then(() => {
+    if (dbError) return res.status(500).json({ error: 'Database initialization failed', details: dbError.message });
+    next();
+  });
+});
 
 // API Routes
 app.use('/api/auth', require('./api/auth'));
@@ -100,10 +126,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n  ✦ HÜFEL CMS Server ✦\n`);
-  console.log(`  • Main site:  http://localhost:${PORT}`);
-  console.log(`  • Admin:      http://localhost:${PORT}/admin`);
-  console.log(`  • API:        http://localhost:${PORT}/api`);
-  console.log(`  • Login:      Amir434 / AmirH434\n`);
-});
+// Export for Vercel serverless (MUST be exported!)
+module.exports = app;
+
+// Only listen directly when NOT on Vercel (local dev)
+if (!isVercel) {
+  app.listen(PORT, () => {
+    console.log(`\n  ✦ HÜFEL CMS Server ✦\n`);
+    console.log(`  • Main site:  http://localhost:${PORT}`);
+    console.log(`  • Admin:      http://localhost:${PORT}/admin`);
+    console.log(`  • API:        http://localhost:${PORT}/api`);
+    console.log(`  • Login:      Amir434 / AmirH434\n`);
+  });
+}
