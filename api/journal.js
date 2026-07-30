@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { queryAll, queryOne, runStatement } = require('../db/init');
+const { fixArrayImageUrls, fixObjectImageUrls } = require('./image-helper');
 
 function requireAuth(req, res, next) {
   if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -13,20 +14,20 @@ router.get('/', (req, res) => {
     excerpt_en, excerpt_fa, excerpt_ar, excerpt_zh,
     image_url, author, published, sort_order, created_at, updated_at
     FROM journal_posts WHERE published = 1 ORDER BY sort_order ASC, id DESC`);
-  res.json(posts);
+  res.json(fixArrayImageUrls(posts, ['image_url']));
 });
 
 // GET /api/journal/admin/all - admin: all posts (must be before /:slug)
 router.get('/admin/all', requireAuth, (req, res) => {
   const posts = queryAll('SELECT * FROM journal_posts ORDER BY sort_order ASC, id DESC');
-  res.json(posts);
+  res.json(fixArrayImageUrls(posts, ['image_url']));
 });
 
 // GET /api/journal/admin/:id - admin: single post by id (must be before /:slug)
 router.get('/admin/:id', requireAuth, (req, res) => {
   const post = queryOne('SELECT * FROM journal_posts WHERE id = ?', [req.params.id]);
   if (!post) return res.status(404).json({ error: 'Not found' });
-  res.json(post);
+  res.json(fixObjectImageUrls(post, ['image_url']));
 });
 
 // GET /api/journal/:slug - public single post
@@ -35,7 +36,7 @@ router.get('/:slug', (req, res) => {
   if (req.params.slug === 'admin') return res.status(404).json({ error: 'Not found' });
   const post = queryOne('SELECT * FROM journal_posts WHERE slug = ? AND published = 1', [req.params.slug]);
   if (!post) return res.status(404).json({ error: 'Not found' });
-  res.json(post);
+  res.json(fixObjectImageUrls(post, ['image_url']));
 });
 
 // POST /api/journal (auth required)

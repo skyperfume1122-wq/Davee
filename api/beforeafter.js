@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { queryAll, queryOne, runStatement } = require('../db/init');
+const { fixArrayImageUrls, fixObjectImageUrls } = require('./image-helper');
 
 function requireAuth(req, res, next) {
   if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -10,20 +11,20 @@ function requireAuth(req, res, next) {
 // GET /api/beforeafter - public list of active images
 router.get('/', (req, res) => {
   const items = queryAll('SELECT * FROM before_after WHERE is_active = 1 ORDER BY sort_order ASC, id DESC');
-  res.json(items);
+  res.json(fixArrayImageUrls(items, ['before_image', 'after_image']));
 });
 
 // GET /api/beforeafter/all - admin: all items
 router.get('/all', requireAuth, (req, res) => {
   const items = queryAll('SELECT * FROM before_after ORDER BY sort_order ASC, id DESC');
-  res.json(items);
+  res.json(fixArrayImageUrls(items, ['before_image', 'after_image']));
 });
 
 // GET /api/beforeafter/:id
 router.get('/:id', (req, res) => {
   const item = queryOne('SELECT * FROM before_after WHERE id = ?', [req.params.id]);
   if (!item) return res.status(404).json({ error: 'Not found' });
-  res.json(item);
+  res.json(fixObjectImageUrls(item, ['before_image', 'after_image']));
 });
 
 // POST /api/beforeafter (auth required)

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { queryAll, queryOne, runStatement } = require('../db/init');
+const { fixArrayImageUrls, fixObjectImageUrls } = require('./image-helper');
 
 function requireAuth(req, res, next) {
   if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -9,13 +10,13 @@ function requireAuth(req, res, next) {
 
 router.get('/', (req, res) => {
   const products = queryAll('SELECT * FROM products ORDER BY sort_order ASC, id DESC');
-  res.json(products);
+  res.json(fixArrayImageUrls(products, ['image_url', 'model_3d_url']));
 });
 
 router.get('/:id', (req, res) => {
   const product = queryOne('SELECT * FROM products WHERE id = ?', [req.params.id]);
   if (!product) return res.status(404).json({ error: 'Not found' });
-  res.json(product);
+  res.json(fixObjectImageUrls(product, ['image_url', 'model_3d_url']));
 });
 
 router.post('/', requireAuth, (req, res) => {
