@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const path = require('path');
 const fs = require('fs');
 const { initDb } = require('./db/init');
@@ -28,14 +29,22 @@ const dbInitPromise = initDb().then(() => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session
+// Session - use file store so sessions persist across server restarts
+const sessionDir = path.join(__dirname, 'sessions');
+if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+
 app.use(session({
+  store: new FileStore({
+    path: sessionDir,
+    ttl: 86400, // 1 day in seconds
+    retries: 0
+  }),
   secret: process.env.SESSION_SECRET || 'hufel-cms-secret-key-2026',
-  resave: true,
+  resave: false,
   saveUninitialized: true,
   rolling: true,
   cookie: {
-    secure: isVercel || process.env.NODE_ENV === 'production',
+    secure: false, // Always false for local dev; Vercel handles HTTPS upstream
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
@@ -44,20 +53,17 @@ app.use(session({
 }));
 
 // Serve extensionless image files BEFORE static middleware to set correct MIME type
-app.use('/images.unsplash.com', (req, res) => {
+// Serve local images (Unsplash/Pexels copies) with proper MIME types
+app.use(['/images.unsplash.com', '/images.pexels.com'], (req, res) => {
   const filePath = path.join(__dirname, 'public', req.path);
   if (fs.existsSync(filePath)) {
     const ext = path.extname(filePath).toLowerCase();
-    const mime = !ext || ext === '' ? 'image/jpeg' : null;
-    if (mime) return res.type(mime).sendFile(filePath);
-  }
-  res.status(404).end();
-});
-app.use('/images.pexels.com', (req, res) => {
-  const filePath = path.join(__dirname, 'public', req.path);
-  if (fs.existsSync(filePath)) {
-    const ext = path.extname(filePath).toLowerCase();
-    const mime = !ext || ext === '' ? 'image/jpeg' : null;
+    const mimeTypes = {
+      '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+      '.png': 'image/png', '.gif': 'image/gif',
+      '.webp': 'image/webp', '.svg': 'image/svg+xml'
+    };
+    const mime = ext ? mimeTypes[ext] : 'image/jpeg';
     if (mime) return res.type(mime).sendFile(filePath);
   }
   res.status(404).end();

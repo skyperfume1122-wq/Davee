@@ -18,7 +18,7 @@ async function seed() {
       code: 'HF-1001',
       title_en: 'Aluminum Handle Bar', title_fa: 'دستگیره آلومینیومی بار', title_ar: 'مقبض ألومنيوم بار', title_zh: '铝制把手杆',
       category: 'Handles', finish: 'Matte Black', collection: 'Natural Grain',
-      image_url: 'https://images.unsplash.com/photo-1564540586988-aa4e53c3d799?w=400&q=80',
+      image_url: '/images.unsplash.com/photo-1564540586988-aa4e53c3d799/w=1000&q=80',
       description_en: 'Premium aluminum handle bar with matte black finish.',
       description_fa: 'دستگیره آلومینیومی بار با روکش مشکی مات.',
       description_ar: 'مقبض ألومنيوم بار بلمسة نهائية سوداء غير لامعة.',
@@ -29,7 +29,7 @@ async function seed() {
       code: 'HF-1002',
       title_en: 'Soft-Close Hinge', title_fa: 'لولا آرام‌بند', title_ar: 'مفصل إغلاق ناعم', title_zh: '缓冲铰链',
       category: 'Hinges', finish: 'Brushed Gold', collection: 'Heritage',
-      image_url: 'https://images.unsplash.com/photo-1607710533910-d7cdffd9e593?w=400&q=80',
+      image_url: '/images.unsplash.com/photo-1607710533910-d7cdffd9e593/w=1000&q=80',
       description_en: 'Hydraulic soft-close mechanism tested for 100,000 cycles.',
       description_fa: 'مکانیزم هیدرولیک آرام‌بند تست‌شده برای ۱۰۰,۰۰۰ سیکل.',
       description_ar: 'آلية إغلاق ناعم هيدروليكية تم اختبارها لـ 100,000 دورة.',
@@ -40,7 +40,7 @@ async function seed() {
       code: 'HF-1003',
       title_en: 'Drawer Slide System', title_fa: 'سیستم ریل کشو', title_ar: 'نظام انزلاق الأدراج', title_zh: '抽屉滑轨系统',
       category: 'Slides', finish: 'Stainless Steel', collection: 'Industrial',
-      image_url: 'https://images.unsplash.com/photo-1622372738946-62e02505feb3?w=400&q=80',
+      image_url: '/images.unsplash.com/photo-1622372738946-62e02505feb3/w=1000&q=80',
       description_en: 'Full-extension drawer slide with soft-close mechanism.',
       description_fa: 'ریل کشو تمام‌کش با آرام‌بند.',
       description_ar: 'انزلاق كامل للأدراج مع إغلاق ناعم.',
@@ -51,7 +51,7 @@ async function seed() {
       code: 'HF-1004',
       title_en: 'Cabinet Lift', title_fa: 'جک کابینت', title_ar: 'آلية رفع الخزائن', title_zh: '柜门支撑杆',
       category: 'Lifts', finish: 'Silver', collection: 'Motion',
-      image_url: 'https://images.unsplash.com/photo-1656402887556-e727ffe1f6d7?w=400&q=80',
+      image_url: '/images.unsplash.com/photo-1656402887556-e727ffe1f6d7/w=800&q=80',
       description_en: 'Gas-powered lift mechanism for upper cabinet doors.',
       description_fa: 'مکانیزم بالابر گازی برای درب‌های کابینت بالا.',
       description_ar: 'آلية رفع تعمل بالغاز لأبواب الخزائن العلوية.',
@@ -127,18 +127,18 @@ async function seed() {
   }
   console.log(`  ✓ ${catCount} categories seeded`);
 
-  // Seed before/after images - using local Unsplash images that exist in the project
+  // Seed before/after images - using local images
   const beforeAfter = [
     {
       title_en: 'Modern Kitchen Transformation', title_fa: 'تحول آشپزخانه مدرن', title_ar: 'تحول المطبخ الحديث', title_zh: '现代厨房改造',
-      before_image: 'https://images.unsplash.com/photo-1656402887556-e727ffe1f6d7?w=800&q=80',
-      after_image: 'https://images.unsplash.com/photo-1663811396551-e639caee6e62?w=800&q=80',
+      before_image: '/images.unsplash.com/photo-1656402887556-e727ffe1f6d7/w=800&q=80',
+      after_image: '/images.unsplash.com/photo-1663811396551-e639caee6e62/w=800&q=80',
       sort_order: 1
     },
     {
       title_en: 'Luxury Cabinetry Upgrade', title_fa: 'ارتقاء کابینت لوکس', title_ar: 'ترقية الخزائن الفاخرة', title_zh: '豪华橱柜升级',
-      before_image: 'https://images.unsplash.com/photo-1623092242739-5a382879cec9?w=800&q=80',
-      after_image: 'https://images.unsplash.com/photo-1564540586988-aa4e53c3d799?w=1000&q=80',
+      before_image: '/images.unsplash.com/photo-1623092242739-5a382879cec9/w=800&q=80',
+      after_image: '/images.unsplash.com/photo-1564540586988-aa4e53c3d799/w=1000&q=80',
       sort_order: 2
     }
   ];

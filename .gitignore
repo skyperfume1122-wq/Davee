@@ -1,6 +1,7 @@
 node_modules/
 db/database.sqlite*
 uploads/*
+sessions/
 !uploads/.gitkeep
 .env
 .DS_Store

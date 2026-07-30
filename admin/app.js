@@ -34,9 +34,14 @@ const API = {
 };
 
 // Handle session expiry - redirect to login
+// Add a guard to prevent multiple rapid redirects
+var __authRedirecting = false;
 function handleSessionExpired() {
+  if (__authRedirecting) return;
+  __authRedirecting = true;
   currentUser = null;
   renderLogin();
+  setTimeout(function() { __authRedirecting = false; }, 1000);
 }
 
 // File upload helper - returns a Promise with the uploaded URL
@@ -198,8 +203,8 @@ function renderDashboard() {
     });
   });
 
-  // Initial page load
-  navigate('dashboard');
+  // Initial page load - small delay to ensure DOM is ready
+  setTimeout(function() { navigate('dashboard'); }, 100);
 }
 
 async function navigate(page) {
