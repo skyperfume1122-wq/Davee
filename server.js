@@ -54,16 +54,22 @@ app.use(session({
 
 // Serve extensionless image files BEFORE static middleware to set correct MIME type
 // Serve local images (Unsplash/Pexels copies) with proper MIME types
+// Note: Files on disk have & and = in their names, but Express parses & as query separator
 app.use(['/images.unsplash.com', '/images.pexels.com'], (req, res) => {
-  const filePath = path.join(__dirname, 'public', req.path);
+  // Reconstruct the raw filename: combine path + query string back together
+  var rawPath = req.path;
+  var queryStr = req.url.split('?').slice(1).join('&');
+  if (queryStr) rawPath += '&' + queryStr;
+
+  var filePath = path.join(__dirname, 'public', rawPath);
   if (fs.existsSync(filePath)) {
-    const ext = path.extname(filePath).toLowerCase();
-    const mimeTypes = {
+    var ext = path.extname(filePath).toLowerCase();
+    var mimeTypes = {
       '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
       '.png': 'image/png', '.gif': 'image/gif',
       '.webp': 'image/webp', '.svg': 'image/svg+xml'
     };
-    const mime = ext ? mimeTypes[ext] : 'image/jpeg';
+    var mime = ext ? mimeTypes[ext] : 'image/jpeg';
     if (mime) return res.type(mime).sendFile(filePath);
   }
   res.status(404).end();
