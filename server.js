@@ -1,6 +1,5 @@
 const express = require('express');
 const session = require('express-session');
-const FileStore = require('session-file-store')(session);
 const path = require('path');
 const fs = require('fs');
 const { initDb } = require('./db/init');
@@ -29,22 +28,23 @@ const dbInitPromise = initDb().then(() => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session - use file store so sessions persist across server restarts
-const sessionDir = path.join(__dirname, 'sessions');
-if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+// Session - FileStore on local (persistent), MemoryStore on Vercel (read-only FS)
+let sessionStore = null;
+if (!isVercel) {
+  const FileStore = require('session-file-store')(session);
+  const sessionDir = path.join(dataDir, 'sessions');
+  if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+  sessionStore = new FileStore({ path: sessionDir, ttl: 86400, retries: 0 });
+}
 
 app.use(session({
-  store: new FileStore({
-    path: sessionDir,
-    ttl: 86400, // 1 day in seconds
-    retries: 0
-  }),
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || 'hufel-cms-secret-key-2026',
   resave: false,
   saveUninitialized: true,
   rolling: true,
   cookie: {
-    secure: false, // Always false for local dev; Vercel handles HTTPS upstream
+    secure: !!isVercel,
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
