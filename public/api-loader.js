@@ -414,16 +414,56 @@
     setupHeaderButtons();
     setTimeout(setupHeaderButtons, 2000);
 
-    // 9. MUSIC
+    // 9. MUSIC PLAYER - Create standalone audio player
     if (songs.length > 0) {
       var song = songs[0];
-      var audio = document.getElementById('hufel-audio');
-      if (audio && song.file_url && audio.src.indexOf(song.file_url) === -1) {
-        var wasPlaying = !audio.paused;
-        audio.src = song.file_url;
-        audio.load();
-        if (wasPlaying) { try { audio.play(); } catch(e) {} }
-      }
+      (function() {
+        // Create a hidden audio element
+        var audioEl = document.createElement('audio');
+        audioEl.id = 'hufel-audio';
+        audioEl.loop = true;
+        audioEl.preload = 'auto';
+        audioEl.src = song.file_url || '/music/Hufel.mp3';
+        document.body.appendChild(audioEl);
+
+        // Create floating music control button
+        var playerBtn = document.createElement('button');
+        playerBtn.id = 'hufel-player-btn';
+        playerBtn.title = song.title_en || 'Hüfel Theme';
+        playerBtn.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999;width:48px;height:48px;border-radius:50%;border:1px solid var(--line,#1f1d1b);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s ease;background:var(--bg-card,#181716);box-shadow:0 4px 16px rgba(0,0,0,0.4);';
+        playerBtn.innerHTML = '<svg id="hufel-player-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent,#c8a45c)" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+        playerBtn.onmouseenter = function() { this.style.transform = 'scale(1.08)'; this.style.borderColor = 'var(--accent,#c8a45c)'; };
+        playerBtn.onmouseleave = function() { this.style.transform = 'scale(1)'; this.style.borderColor = 'var(--line,#1f1d1b)'; };
+
+        var isPlaying = false;
+        playerBtn.onclick = function() {
+          if (isPlaying) {
+            audioEl.pause();
+            playerBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent,#c8a45c)" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+          } else {
+            audioEl.play().catch(function() {});
+            playerBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent,#c8a45c)" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+          }
+          isPlaying = !isPlaying;
+        };
+
+        document.body.appendChild(playerBtn);
+
+        // Try to autoplay (browsers may block this)
+        var autoplayAttempt = setTimeout(function() {
+          audioEl.play().then(function() {
+            isPlaying = true;
+            playerBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent,#c8a45c)" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+          }).catch(function() {
+            // Autoplay blocked - user needs to click
+            var notice = document.createElement('div');
+            notice.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:998;background:var(--bg-card,#181716);border:1px solid var(--line,#1f1d1b);border-radius:8px;padding:8px 14px;font-size:11px;color:var(--muted2,#6b6965);animation:fadeIn 0.3s ease;max-width:200px;text-align:center;';
+            notice.textContent = 'Tap the music button to play Hüfel theme';
+            document.body.appendChild(notice);
+            setTimeout(function() { notice.style.opacity = '0'; notice.style.transition = 'opacity 0.5s'; setTimeout(function() { notice.remove(); }, 500); }, 4000);
+          });
+        }, 1500);
+      })();
     }
 
     // 10. SITE NAME
